@@ -3,86 +3,94 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class WolfHuntGame extends JPanel implements ActionListener, KeyListener {
-    Timer timer;
-    int wolfX = 100, wolfY = 100; 
-    int preyX = 300, preyY = 300;
-    int score = 0; 
-    boolean caughtPrey = false;
-    
+    private static final int PANEL_WIDTH = 800;
+    private static final int PANEL_HEIGHT = 600;
+    private static final int WOLF_SIZE = 50;
+    private static final int PREY_SIZE = 30;
+    private static final int WOLF_SPEED = 10;
+
+    private Timer timer;
+    private int wolfX = 100, wolfY = 100;
+    private int preyX = 300, preyY = 300;
+    private int score = 0;
+    private boolean caughtPrey = false;
+
     public WolfHuntGame() {
+        setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
+        setBackground(Color.GREEN);
+        setFocusable(true);
+        addKeyListener(this);
+
         timer = new Timer(100, this);
         timer.start();
-        addKeyListener(this);
-        setFocusable(true);
-        setFocusTraversalKeysEnabled(false);
     }
 
     @Override
-    public void paintComponent(Graphics g) {
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
- 
-        g.setColor(Color.green);
-        g.fillRect(0, 0, 800, 600);
 
-        g.setColor(Color.gray);
-        g.fillRect(wolfX, wolfY, 50, 50);
+        // Draw the wolf
+        g.setColor(Color.DARK_GRAY);
+        g.fillRoundRect(wolfX, wolfY, WOLF_SIZE, WOLF_SIZE, 15, 15);
 
+        // Draw the prey
         if (!caughtPrey) {
-            g.setColor(Color.orange);
-            g.fillRect(preyX, preyY, 30, 30);
+            g.setColor(Color.ORANGE);
+            g.fillOval(preyX, preyY, PREY_SIZE, PREY_SIZE);
         }
 
-        g.setColor(Color.black);
-        g.drawString("Score: " + score, 20, 20);
+        // Draw score
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + score, 20, 30);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (caughtPrey) {
-   
-            preyX = (int) (Math.random() * 750);
-            preyY = (int) (Math.random() * 550);
-            caughtPrey = false;
-        }
+        checkCollision();
+        repaint();
+    }
 
-        if (new Rectangle(wolfX, wolfY, 50, 50).intersects(new Rectangle(preyX, preyY, 30, 30))) {
+    private void checkCollision() {
+        Rectangle wolfRect = new Rectangle(wolfX, wolfY, WOLF_SIZE, WOLF_SIZE);
+        Rectangle preyRect = new Rectangle(preyX, preyY, PREY_SIZE, PREY_SIZE);
+
+        if (wolfRect.intersects(preyRect)) {
             caughtPrey = true;
             score += 10;
-        }
 
-        repaint();
+            // Respawn prey at random location
+            preyX = (int) (Math.random() * (PANEL_WIDTH - PREY_SIZE));
+            preyY = (int) (Math.random() * (PANEL_HEIGHT - PREY_SIZE));
+            caughtPrey = false;
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
 
-        if (key == KeyEvent.VK_LEFT) {
-            wolfX = Math.max(wolfX - 10, 0); 
+        switch (key) {
+            case KeyEvent.VK_LEFT -> wolfX = Math.max(wolfX - WOLF_SPEED, 0);
+            case KeyEvent.VK_RIGHT -> wolfX = Math.min(wolfX + WOLF_SPEED, PANEL_WIDTH - WOLF_SIZE);
+            case KeyEvent.VK_UP -> wolfY = Math.max(wolfY - WOLF_SPEED, 0);
+            case KeyEvent.VK_DOWN -> wolfY = Math.min(wolfY + WOLF_SPEED, PANEL_HEIGHT - WOLF_SIZE);
         }
-        if (key == KeyEvent.VK_RIGHT) {
-            wolfX = Math.min(wolfX + 10, 750);
-        }
-        if (key == KeyEvent.VK_UP) {
-            wolfY = Math.max(wolfY - 10, 0); 
-        }
-        if (key == KeyEvent.VK_DOWN) {
-            wolfY = Math.min(wolfY + 10, 550); 
-        }
+
+        repaint();
     }
 
-    @Override
-    public void keyReleased(KeyEvent e) { }
-
-    @Override
-    public void keyTyped(KeyEvent e) { }
+    @Override public void keyReleased(KeyEvent e) { }
+    @Override public void keyTyped(KeyEvent e) { }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Wolf Hunt Adventure");
-        WolfHuntGame game = new WolfHuntGame();
-        frame.add(game);
-        frame.setSize(800, 600);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("🐺 Wolf Hunt Adventure 🐇");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.add(new WolfHuntGame());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }
